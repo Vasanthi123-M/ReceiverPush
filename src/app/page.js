@@ -170,7 +170,7 @@ export default function ReceiverPage() {
           localStorage.setItem("user_data", JSON.stringify({ ...parsed, token: newToken }));
 
           // Save token to backend
-          await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/save-token`, {
+          await fetch("https://sender-push.vercel.app/api/save-token", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -198,16 +198,18 @@ export default function ReceiverPage() {
       const newToken = await getToken(messaging, {
         vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID,
       });
-
+console.log("new token " ,token);
       setToken(newToken);
 
       // Save to backend
-      await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/save-token`, {
+      await fetch("https://sender-push.vercel.app/api/save-token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, token: newToken }),
       });
-
+console.log("backend url ",process.env.NEXT_PUBLIC_BACKEND_URL);
+console.log("name",name);
+console.log("newtoken ",token);
       // Save to localStorage
       localStorage.setItem("user_data", JSON.stringify({ name, email, token: newToken }));
 
