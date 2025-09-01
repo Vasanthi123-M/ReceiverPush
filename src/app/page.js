@@ -259,12 +259,11 @@
 //   );
 // }
 
-
 "use client";
 
 import { useEffect, useState } from "react";
 import { messaging } from "@/lib/firebaseClient";
-import { getToken, deleteToken, onMessage } from "firebase/messaging";
+import { getToken, onMessage } from "firebase/messaging";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -273,7 +272,7 @@ export default function ReceiverPage() {
   const [email, setEmail] = useState("");
   const [token, setToken] = useState("");
 
-  // 🔹 Foreground notifications
+  // Foreground notifications
   useEffect(() => {
     if (!messaging) return;
     const unsub = onMessage(messaging, (payload) => {
@@ -286,7 +285,7 @@ export default function ReceiverPage() {
     return () => unsub();
   }, []);
 
-  // 🔹 Refresh token on page load
+  // Load user from localStorage
   useEffect(() => {
     const saved = localStorage.getItem("user_data");
     if (!saved) return;
@@ -294,55 +293,23 @@ export default function ReceiverPage() {
     const parsed = JSON.parse(saved);
     setName(parsed.name || "");
     setEmail(parsed.email || "");
-
-    (async () => {
-      try {
-        // Delete old token from Firebase
-        await deleteToken(messaging);
-
-        // Get new token
-        const newToken = await getToken(messaging, {
-          vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID,
-        });
-
-        if (newToken) {
-          setToken(newToken);
-
-          // Save updated token in localStorage
-          localStorage.setItem(
-            "user_data",
-            JSON.stringify({ ...parsed, token: newToken })
-          );
-
-          // Save to backend (update token for this user)
-          await fetch(`${BACKEND_URL}/api/save-token`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              name: parsed.name,
-              email: parsed.email,
-              token: newToken,
-            }),
-          });
-
-          console.log("Token refreshed & saved:", newToken);
-        }
-      } catch (err) {
-        console.error("Token refresh error:", err);
-      }
-    })();
+    setToken(parsed.token || "");
   }, []);
 
-  // 🔹 First-time register
+  // Register user & generate token once
   async function register() {
     if (!name) return alert("Enter your name");
 
     try {
-      await deleteToken(messaging);
-
+      // Get token (if already exists, Firebase returns the same one)
       const newToken = await getToken(messaging, {
         vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID,
       });
+
+      if (!newToken) {
+        alert("⚠️ No FCM token generated");
+        return;
+      }
 
       setToken(newToken);
 
@@ -359,8 +326,8 @@ export default function ReceiverPage() {
         JSON.stringify({ name, email, token: newToken })
       );
 
-      console.log("Registered & token saved:", newToken);
-      alert("✅ Registered & Token Saved");
+      console.log("✅ Registered & token saved:", newToken);
+      alert("Registered & Token Saved");
     } catch (err) {
       console.error("Registration error:", err);
       alert("Registration failed: " + err.message);
