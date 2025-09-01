@@ -56,12 +56,15 @@ const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage(function(payload) {
   const notificationTitle = payload.data?.title || "Notification";
+   console.log("notificationTitle",notificationTitle);
+
   const notificationOptions = {
     body: payload.data?.body || "",
   };
   self.registration.showNotification(notificationTitle, notificationOptions);
-});
+  console.log("notificationOptions",notificationOptions)
 
+});
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   event.waitUntil(
